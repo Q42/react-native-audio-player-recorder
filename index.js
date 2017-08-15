@@ -113,7 +113,7 @@ var AudioRecorder = {
         recordingOptions.MeteringEnabled
       );
     } else {
-      return AudioRecorderManager.prepareRecordingAtPath(path, recordingOptions);
+      AudioRecorderManager.prepareRecordingAtPath(path, recordingOptions);
     }
 
     if (this.progressSubscription) this.progressSubscription.remove();

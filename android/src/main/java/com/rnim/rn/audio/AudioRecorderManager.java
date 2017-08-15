@@ -3,6 +3,7 @@ package com.rnim.rn.audio;
 import android.Manifest;
 import android.content.Context;
 
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -12,6 +13,7 @@ import com.facebook.react.bridge.ReadableMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,9 +25,13 @@ import android.media.AudioManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.io.FileInputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 
 class AudioRecorderManager extends ReactContextBaseJavaModule {
   private static final String DocumentDirectoryPath = "DocumentDirectoryPath";
@@ -40,7 +46,8 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
   private String currentOutputFile;
   private boolean isRecording = false;
   private AudioPlayerManager audioPlayerManager;
-
+  private Timer timer;
+  private long startTime;
 
   public AudioRecorderManager(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -163,6 +170,7 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
     }
     recorder.start();
     isRecording = true;
+    startTimer();
     promise.resolve(currentOutputFile);
   }
 
@@ -176,6 +184,7 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
     recorder.stop();
     isRecording = false;
     recorder.release();
+    stopTimer();
     promise.resolve(currentOutputFile);
     sendEvent("recordingFinished", null);
   }
@@ -213,5 +222,30 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
             .emit(eventName, params);
   }
 
+  private void startTimer()
+  {
+    startTime = new Date().getTime();
+    timer = new Timer();
+    TimerTask task = new TimerTask() {
+      @Override
+      public void run() {
+        if (recorder != null && isRecording) {
+          WritableMap map = Arguments.createMap();
+          map.putDouble("currentTime", (new Date().getTime() - startTime)/1000);
+          sendEvent("recordingProgress", map);
+        }
+      }
+    };
+    timer.schedule(task, 0, 250);
+  }
+
+  private void stopTimer()
+  {
+    if(timer != null)
+    {
+      timer.cancel();
+      timer.purge();
+    }
+  }
 
 }
